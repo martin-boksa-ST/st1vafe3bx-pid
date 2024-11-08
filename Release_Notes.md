@@ -31,7 +31,7 @@ This directory contains the ST1VAFE3BX component drivers.
 
 ::: {.collapse}
 
-<input type="checkbox" id="collapse-section1" checked aria-hidden="true">
+<input type="checkbox" id="collapse-section1" aria-hidden="true">
 <label for="collapse-section1" aria-hidden="true">V1.0.0 / 20-Sept-2024</label>
 <div>
 
@@ -44,7 +44,20 @@ This directory contains the ST1VAFE3BX component drivers.
 ##
 
 </div>
+
+<input type="checkbox" id="collapse-section2" checked aria-hidden="true">
+<label for="collapse-section2" aria-hidden="true">V2.0.0 / 08-Nov-2024</label>
+<div>
+
+## Main changes
+
+- Align driver to DS Rev2
+
+##
+
+</div>
 :::
+
 
 :::
 :::
