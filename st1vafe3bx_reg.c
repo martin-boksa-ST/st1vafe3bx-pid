@@ -2178,6 +2178,7 @@ int32_t st1vafe3bx_fifo_data_get(const stmdev_ctx_t *ctx,
       data->ah_bio.raw = (int16_t)fifo_raw[0] + (int16_t)fifo_raw[1] * 256U;
       data->ah_bio.mv = st1vafe3bx_from_lsb_to_mv(data->ah_bio.raw);
       break;
+    case ST1VAFE3BX_XL_ONLY:
     case ST1VAFE3BX_XL_AND_AH_VAFE1_TAG:
       ret = st1vafe3bx_fifo_out_raw_get(ctx, fifo_raw);
 

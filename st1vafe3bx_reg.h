@@ -2366,6 +2366,7 @@ int32_t st1vafe3bx_fifo_wtm_flag_get(const stmdev_ctx_t *ctx, uint8_t *val);
 typedef enum
 {
   ST1VAFE3BX_FIFO_EMPTY_TAG             = 0x0,
+  ST1VAFE3BX_XL_ONLY                    = 0x2,
   ST1VAFE3BX_XL_ONLY_2X_TAG             = 0x3,
   ST1VAFE3BX_TIMESTAMP_CFG_CHG_TAG      = 0x4,
   ST1VAFE3BX_STEP_COUNTER_TAG           = 0x12,
