@@ -134,6 +134,9 @@ typedef struct
   stmdev_mdelay_ptr   mdelay;
   /** Customizable optional pointer **/
   void *handle;
+
+  /** private data **/
+  uint8_t vafe_only;
 } st1vafe3bx_ctx_t;
 
 #ifndef MEMS_UCF_SHARED_TYPES
@@ -2460,8 +2463,8 @@ int32_t st1vafe3bx_ah_bio_config_set(const st1vafe3bx_ctx_t *ctx,
 int32_t st1vafe3bx_ah_bio_config_get(const st1vafe3bx_ctx_t *ctx,
                                      st1vafe3bx_ah_bio_config_t *val);
 
-int32_t st1vafe3bx_enter_vafe_only(const st1vafe3bx_ctx_t *ctx);
-int32_t st1vafe3bx_exit_vafe_only(const st1vafe3bx_ctx_t *ctx);
+int32_t st1vafe3bx_enter_vafe_only(st1vafe3bx_ctx_t *ctx);
+int32_t st1vafe3bx_exit_vafe_only(st1vafe3bx_ctx_t *ctx);
 int32_t st1vafe3bx_ah_bio_active(const st1vafe3bx_ctx_t *ctx, uint8_t filter_on);
 
 typedef struct

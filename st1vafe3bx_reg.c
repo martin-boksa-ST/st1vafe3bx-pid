@@ -929,15 +929,28 @@ int32_t st1vafe3bx_xl_data_get(const st1vafe3bx_ctx_t *ctx,
 int32_t st1vafe3bx_ah_bio_data_get(const st1vafe3bx_ctx_t *ctx,
                                    st1vafe3bx_ah_bio_data_t *data)
 {
-  uint8_t buff[2];
+  uint8_t buff[3];
   int32_t ret;
 
-  ret = st1vafe3bx_read_reg(ctx, ST1VAFE3BX_OUT_AH_BIO_L, buff, 2);
+  if (ctx->vafe_only == 1)
+  {
+    ret = st1vafe3bx_read_reg(ctx, ST1VAFE3BX_OUT_AH_BIO_L, buff, 2);
 
-  data->raw = (int16_t)buff[1];
-  data->raw = (data->raw * 256U) + (int16_t)buff[0];
+    data->raw = (int16_t)buff[1];
+    data->raw = (data->raw * 256U) + (int16_t)buff[0];
 
-  data->mv = st1vafe3bx_from_lsb_to_mv(data->raw);
+    data->mv = st1vafe3bx_from_lsb_to_mv(data->raw);
+  }
+  else
+  {
+    /* Read and discard also OUT_Z_H reg to clear drdy */
+    ret = st1vafe3bx_read_reg(ctx, ST1VAFE3BX_OUT_AH_BIO_L - 1, buff, 3);
+
+    data->raw = (int16_t)buff[2];
+    data->raw = (data->raw * 256U) + (int16_t)buff[1];
+
+    data->mv = st1vafe3bx_from_lsb_to_mv(data->raw);
+  }
 
   return ret;
 }
@@ -2447,7 +2460,7 @@ int32_t st1vafe3bx_ah_bio_config_get(const st1vafe3bx_ctx_t *ctx,
   * @retval          interface status (MANDATORY: return 0 -> no Error)
   *
   */
-int32_t st1vafe3bx_enter_vafe_only(const st1vafe3bx_ctx_t *ctx)
+int32_t st1vafe3bx_enter_vafe_only(st1vafe3bx_ctx_t *ctx)
 {
   st1vafe3bx_ah_bio_cfg2_t cfg2;
   int32_t ret;
@@ -2455,6 +2468,11 @@ int32_t st1vafe3bx_enter_vafe_only(const st1vafe3bx_ctx_t *ctx)
   ret = st1vafe3bx_read_reg(ctx, ST1VAFE3BX_AH_BIO_CFG2, (uint8_t *)&cfg2, 1);
   cfg2.ah_bio_en = 1;
   ret += st1vafe3bx_write_reg(ctx, ST1VAFE3BX_AH_BIO_CFG2, (uint8_t *)&cfg2, 1);
+
+  if (ret == 0)
+  {
+    ctx->vafe_only = 1;
+  }
 
   return ret;
 }
@@ -2466,7 +2484,7 @@ int32_t st1vafe3bx_enter_vafe_only(const st1vafe3bx_ctx_t *ctx)
   * @retval          interface status (MANDATORY: return 0 -> no Error)
   *
   */
-int32_t st1vafe3bx_exit_vafe_only(const st1vafe3bx_ctx_t *ctx)
+int32_t st1vafe3bx_exit_vafe_only(st1vafe3bx_ctx_t *ctx)
 {
   st1vafe3bx_ah_bio_cfg2_t cfg2;
   int32_t ret;
@@ -2474,6 +2492,11 @@ int32_t st1vafe3bx_exit_vafe_only(const st1vafe3bx_ctx_t *ctx)
   ret = st1vafe3bx_read_reg(ctx, ST1VAFE3BX_AH_BIO_CFG2, (uint8_t *)&cfg2, 1);
   cfg2.ah_bio_en = 0;
   ret += st1vafe3bx_write_reg(ctx, ST1VAFE3BX_AH_BIO_CFG2, (uint8_t *)&cfg2, 1);
+
+  if (ret == 0)
+  {
+    ctx->vafe_only = 0;
+  }
 
   return ret;
 }
