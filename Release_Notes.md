@@ -45,13 +45,26 @@ This directory contains the ST1VAFE3BX component drivers.
 
 </div>
 
-<input type="checkbox" id="collapse-section2" checked aria-hidden="true">
+<input type="checkbox" id="collapse-section2" aria-hidden="true">
 <label for="collapse-section2" aria-hidden="true">V2.0.0 / 08-Nov-2024</label>
 <div>
 
 ## Main changes
 
 - Align driver to DS Rev2
+
+##
+
+</div>
+
+<input type="checkbox" id="collapse-section3" checked aria-hidden="true">
+<label for="collapse-section3" aria-hidden="true">V2.1.0 / 07-Apr-2025</label>
+<div>
+
+## Main changes
+
+- fix drdy event clearing
+- Make ctx a private structure
 
 ##
 
