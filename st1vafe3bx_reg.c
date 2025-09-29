@@ -509,80 +509,122 @@ int32_t st1vafe3bx_mode_set(const stmdev_ctx_t *ctx, const st1vafe3bx_md_t *val)
   st1vafe3bx_ctrl3_t ctrl3;
   st1vafe3bx_ctrl5_t ctrl5;
   int32_t ret;
+  uint8_t hp_en_change = 0U;
 
-  ret = st1vafe3bx_read_reg(ctx, ST1VAFE3BX_CTRL5, (uint8_t *)&ctrl5, 1);
-  ret += st1vafe3bx_read_reg(ctx, ST1VAFE3BX_CTRL3, (uint8_t *)&ctrl3, 1);
+  ret  = st1vafe3bx_read_reg(ctx, ST1VAFE3BX_CTRL3, (uint8_t *)&ctrl3, 1);
+  ret += st1vafe3bx_read_reg(ctx, ST1VAFE3BX_CTRL5, (uint8_t *)&ctrl5, 1);
 
-  ctrl5.odr = (uint8_t)val->odr & 0xFU;
-  ctrl5.fs = (uint8_t)val->fs;
-
-  /* select high performance mode */
-  if (val->odr == 0x00U)
+  if (ctrl3.hp_en != val->hp_en)
   {
-    ctrl3.hp_en = 1U;
+    hp_en_change = 1U;
   }
-  else
+
+  /* Set the power mode */
+  ctrl3.hp_en = val->hp_en;
+
+  if (ret == 0)
   {
-    switch (val->odr & 0x30U)
+    if (hp_en_change == 1U  &&  ctrl5.odr != 0x00)
     {
-      case 0x30U:
-      case 0x10U:
-        /* high performance mode */
-        ctrl3.hp_en = 1U;
-        break;
-      case 0x00U:
-      case 0x20U:
-      default:
-        /* low power mode */
-        ctrl3.hp_en = 0U;
-        break;
+      /* Power down to allow HP_EN change (see: ST1VAFE3BX datasheet) */
+      uint32_t timeout = (ctrl5.odr == 0x01U) ? 625U   /*     1.6 Hz */
+                       : (ctrl5.odr == 0x02U) ? 335U   /*     3.0 Hz */
+                       : (ctrl5.odr == 0x03U) ?  40U   /*    25.0 Hz */
+                       : (ctrl5.odr == 0x04U) ? 170U   /*     6.0 Hz */
+                       : (ctrl5.odr == 0x05U) ?  80U   /*    12.5 Hz */
+                       : (ctrl5.odr == 0x06U) ?  40U   /*    25.0 Hz */
+                       :                         25U;  /* >= 50.0 Hz */
+
+      ctrl5.odr = 0x00U;
+      ret = st1vafe3bx_write_reg(ctx, ST1VAFE3BX_CTRL5, (uint8_t *)&ctrl5, 1);
+      
+      /* Wait one ODR period (see AN6160 Section 3.1) */
+      if (ctx->mdelay != NULL)
+      {
+        ctx->mdelay(timeout);
+      }
     }
   }
 
-  /* set the bandwidth */
+  /* Set the ODR, full scale */
+  ctrl5.odr = (val->odr == ST1VAFE3BX_TRIG_PIN) ? 0x0FU : (uint8_t)val->odr & 0x0FU;
+  ctrl5.fs  = (uint8_t)val->fs;
+
+  /* Set the bandwidth */
   switch (val->odr)
   {
-    /* no anti-aliasing filter present */
+    /* No anti-aliasing filter present */
     default:
     case ST1VAFE3BX_OFF:
     case ST1VAFE3BX_1Hz6_ULP:
     case ST1VAFE3BX_3Hz_ULP:
     case ST1VAFE3BX_25Hz_ULP:
-      ctrl5.bw = 0x0;
+    case ST1VAFE3BX_TRIG_PIN:
+    case ST1VAFE3BX_TRIG_SW:
+      ctrl5.bw = 0x00U;
       break;
 
-    /* low-power mode with ODR < 50 Hz */
+    /* The low-power mode with ODR < 50 Hz */
     case ST1VAFE3BX_6Hz_LP:
-    case ST1VAFE3BX_12Hz5_LP:
-    case ST1VAFE3BX_25Hz_LP:
       switch (val->bw)
       {
-        default:
-          /* value not allowed */
-          ret = -1;
-          break;
-        case ST1VAFE3BX_BW_LP_12Hz5:
-          ctrl5.bw = 0x1;
-          break;
-        case ST1VAFE3BX_BW_LP_6Hz:
-          ctrl5.bw = 0x2;
-          break;
         case ST1VAFE3BX_BW_LP_3Hz:
-          ctrl5.bw = 0x3;
+          ctrl5.bw = 0x03U;
+          break;
+
+        default:
+          /* Value not allowed */
+          ret += 1;
           break;
       }
       break;
 
-    /* High Performance cases */
-    case ST1VAFE3BX_800Hz_VAFE_HP:
-    case ST1VAFE3BX_3200Hz_VAFE_LP:
+    case ST1VAFE3BX_12Hz5_LP:
+      switch (val->bw)
+      {
+        case ST1VAFE3BX_BW_LP_6Hz:
+          ctrl5.bw = 0x02U;
+          break;
+
+        case ST1VAFE3BX_BW_LP_3Hz:
+          ctrl5.bw = 0x03U;
+          break;
+
+        default:
+          /* Value not allowed */
+          ret += 1;
+          break;
+      }
+      break;
+
+    case ST1VAFE3BX_25Hz_LP:
+      switch (val->bw)
+      {
+        case ST1VAFE3BX_BW_LP_12Hz5:
+          ctrl5.bw = 0x01U;
+          break;
+
+        case ST1VAFE3BX_BW_LP_6Hz:
+          ctrl5.bw = 0x02U;
+          break;
+
+        case ST1VAFE3BX_BW_LP_3Hz:
+          ctrl5.bw = 0x03U;
+          break;
+
+        default:
+          /* Value not allowed */
+          ret += 1;
+          break;
+      }
+      break;
+
+    /* The low-power mode with ODR >= 50 Hz, High Performance cases */
     case ST1VAFE3BX_50Hz_LP:
     case ST1VAFE3BX_100Hz_LP:
     case ST1VAFE3BX_200Hz_LP:
     case ST1VAFE3BX_400Hz_LP:
     case ST1VAFE3BX_800Hz_LP:
-    case ST1VAFE3BX_TRIG_PIN:
-    case ST1VAFE3BX_TRIG_SW:
     case ST1VAFE3BX_6Hz_HP:
     case ST1VAFE3BX_12Hz5_HP:
     case ST1VAFE3BX_25Hz_HP:
@@ -591,14 +633,88 @@ int32_t st1vafe3bx_mode_set(const stmdev_ctx_t *ctx, const st1vafe3bx_md_t *val)
     case ST1VAFE3BX_200Hz_HP:
     case ST1VAFE3BX_400Hz_HP:
     case ST1VAFE3BX_800Hz_HP:
-      ctrl5.bw = (uint8_t)val->bw;
+      switch (val->bw)
+      {
+        case ST1VAFE3BX_BW_ODR_div_2:
+          ctrl5.bw = 0x00U;
+          break;
+
+        case ST1VAFE3BX_BW_ODR_div_4:
+          ctrl5.bw = 0x01U;
+          break;
+
+        case ST1VAFE3BX_BW_ODR_div_8:
+          ctrl5.bw = 0x02U;
+          break;
+
+        case ST1VAFE3BX_BW_ODR_div_16:
+          ctrl5.bw = 0x03U;
+          break;
+
+        default:
+          /* Value not allowed */
+          ret += 1;
+          break;
+      }
+      break;
+
+    case ST1VAFE3BX_800Hz_VAFE_HP:
+      switch (val->bw)
+      {
+        case ST1VAFE3BX_BW_VAFE_360Hz:
+          ctrl5.bw = 0x00U;
+          break;
+
+        case ST1VAFE3BX_BW_VAFE_180Hz:
+          ctrl5.bw = 0x01U;
+          break;
+
+        case ST1VAFE3BX_BW_VAFE_90Hz:
+          ctrl5.bw = 0x02U;
+          break;
+
+        case ST1VAFE3BX_BW_VAFE_45Hz:
+          ctrl5.bw = 0x03U;
+          break;
+
+        default:
+          /* Value not allowed */
+          ret += 1;
+          break;
+      }
+      break;
+
+    case ST1VAFE3BX_3200Hz_VAFE_LP:
+      switch (val->bw)
+      {
+        case ST1VAFE3BX_BW_VAFE_1600Hz:
+          ctrl5.bw = 0x00U;
+          break;
+
+        case ST1VAFE3BX_BW_VAFE_700Hz:
+          ctrl5.bw = 0x01U;
+          break;
+
+        case ST1VAFE3BX_BW_VAFE_360Hz:
+          ctrl5.bw = 0x02U;
+          break;
+
+        case ST1VAFE3BX_BW_VAFE_180Hz:
+          ctrl5.bw = 0x03U;
+          break;
+
+        default:
+          /* Value not allowed */
+          ret += 1;
+          break;
+      }
       break;
   }
 
   if (ret == 0)
   {
-    ret = st1vafe3bx_write_reg(ctx, ST1VAFE3BX_CTRL5, (uint8_t *)&ctrl5, 1);
-    ret += st1vafe3bx_write_reg(ctx, ST1VAFE3BX_CTRL3, (uint8_t *)&ctrl3, 1);
+    ret  = st1vafe3bx_write_reg(ctx, ST1VAFE3BX_CTRL3, (uint8_t *)&ctrl3, 1);
+    ret += st1vafe3bx_write_reg(ctx, ST1VAFE3BX_CTRL5, (uint8_t *)&ctrl5, 1);
   }
 
   return ret;
