@@ -551,164 +551,177 @@ int32_t st1vafe3bx_mode_set(const stmdev_ctx_t *ctx, const st1vafe3bx_md_t *val)
   ctrl5.fs  = (uint8_t)val->fs;
 
   /* Set the bandwidth */
-  switch (val->odr)
+  if (ctx->priv_data && ((st1vafe3bx_priv_t *)(ctx->priv_data))->vafe_only == 1)
   {
-    /* No anti-aliasing filter present */
-    default:
-    case ST1VAFE3BX_OFF:
-    case ST1VAFE3BX_1Hz6_ULP:
-    case ST1VAFE3BX_3Hz_ULP:
-    case ST1VAFE3BX_25Hz_ULP:
-    case ST1VAFE3BX_TRIG_PIN:
-    case ST1VAFE3BX_TRIG_SW:
-      ctrl5.bw = 0x00U;
-      break;
+    switch (val->odr)
+    {
+      case ST1VAFE3BX_800Hz_VAFE_HP:
+        switch (val->bw)
+        {
+          case ST1VAFE3BX_BW_VAFE_360Hz:
+            ctrl5.bw = 0x00U;
+            break;
+  
+          case ST1VAFE3BX_BW_VAFE_180Hz:
+            ctrl5.bw = 0x01U;
+            break;
+  
+          case ST1VAFE3BX_BW_VAFE_90Hz:
+            ctrl5.bw = 0x02U;
+            break;
+  
+          case ST1VAFE3BX_BW_VAFE_45Hz:
+            ctrl5.bw = 0x03U;
+            break;
+  
+          default:
+            /* Value not allowed */
+            ret += 1;
+            break;
+        }
+        break;
+  
+      case ST1VAFE3BX_3200Hz_VAFE_LP:
+        switch (val->bw)
+        {
+          case ST1VAFE3BX_BW_VAFE_1600Hz:
+            ctrl5.bw = 0x00U;
+            break;
+  
+          case ST1VAFE3BX_BW_VAFE_700Hz:
+            ctrl5.bw = 0x01U;
+            break;
+  
+          case ST1VAFE3BX_BW_VAFE_360Hz:
+            ctrl5.bw = 0x02U;
+            break;
+  
+          case ST1VAFE3BX_BW_VAFE_180Hz:
+            ctrl5.bw = 0x03U;
+            break;
+  
+          default:
+            /* Value not allowed */
+            ret += 1;
+            break;
+        }
+        break;
 
-    /* The low-power mode with ODR < 50 Hz */
-    case ST1VAFE3BX_6Hz_LP:
-      switch (val->bw)
-      {
-        case ST1VAFE3BX_BW_LP_3Hz:
-          ctrl5.bw = 0x03U;
-          break;
-
-        default:
-          /* Value not allowed */
-          ret += 1;
-          break;
-      }
-      break;
-
-    case ST1VAFE3BX_12Hz5_LP:
-      switch (val->bw)
-      {
-        case ST1VAFE3BX_BW_LP_6Hz:
-          ctrl5.bw = 0x02U;
-          break;
-
-        case ST1VAFE3BX_BW_LP_3Hz:
-          ctrl5.bw = 0x03U;
-          break;
-
-        default:
-          /* Value not allowed */
-          ret += 1;
-          break;
-      }
-      break;
-
-    case ST1VAFE3BX_25Hz_LP:
-      switch (val->bw)
-      {
-        case ST1VAFE3BX_BW_LP_12Hz5:
-          ctrl5.bw = 0x01U;
-          break;
-
-        case ST1VAFE3BX_BW_LP_6Hz:
-          ctrl5.bw = 0x02U;
-          break;
-
-        case ST1VAFE3BX_BW_LP_3Hz:
-          ctrl5.bw = 0x03U;
-          break;
-
-        default:
-          /* Value not allowed */
-          ret += 1;
-          break;
-      }
-      break;
-
-    /* The low-power mode with ODR >= 50 Hz, High Performance cases */
-    case ST1VAFE3BX_50Hz_LP:
-    case ST1VAFE3BX_100Hz_LP:
-    case ST1VAFE3BX_200Hz_LP:
-    case ST1VAFE3BX_400Hz_LP:
-    case ST1VAFE3BX_800Hz_LP:
-    case ST1VAFE3BX_6Hz_HP:
-    case ST1VAFE3BX_12Hz5_HP:
-    case ST1VAFE3BX_25Hz_HP:
-    case ST1VAFE3BX_50Hz_HP:
-    case ST1VAFE3BX_100Hz_HP:
-    case ST1VAFE3BX_200Hz_HP:
-    case ST1VAFE3BX_400Hz_HP:
-    case ST1VAFE3BX_800Hz_HP:
-      switch (val->bw)
-      {
-        case ST1VAFE3BX_BW_ODR_div_2:
-          ctrl5.bw = 0x00U;
-          break;
-
-        case ST1VAFE3BX_BW_ODR_div_4:
-          ctrl5.bw = 0x01U;
-          break;
-
-        case ST1VAFE3BX_BW_ODR_div_8:
-          ctrl5.bw = 0x02U;
-          break;
-
-        case ST1VAFE3BX_BW_ODR_div_16:
-          ctrl5.bw = 0x03U;
-          break;
-
-        default:
-          /* Value not allowed */
-          ret += 1;
-          break;
-      }
-      break;
-
-    case ST1VAFE3BX_800Hz_VAFE_HP:
-      switch (val->bw)
-      {
-        case ST1VAFE3BX_BW_VAFE_360Hz:
-          ctrl5.bw = 0x00U;
-          break;
-
-        case ST1VAFE3BX_BW_VAFE_180Hz:
-          ctrl5.bw = 0x01U;
-          break;
-
-        case ST1VAFE3BX_BW_VAFE_90Hz:
-          ctrl5.bw = 0x02U;
-          break;
-
-        case ST1VAFE3BX_BW_VAFE_45Hz:
-          ctrl5.bw = 0x03U;
-          break;
-
-        default:
-          /* Value not allowed */
-          ret += 1;
-          break;
-      }
-      break;
-
-    case ST1VAFE3BX_3200Hz_VAFE_LP:
-      switch (val->bw)
-      {
-        case ST1VAFE3BX_BW_VAFE_1600Hz:
-          ctrl5.bw = 0x00U;
-          break;
-
-        case ST1VAFE3BX_BW_VAFE_700Hz:
-          ctrl5.bw = 0x01U;
-          break;
-
-        case ST1VAFE3BX_BW_VAFE_360Hz:
-          ctrl5.bw = 0x02U;
-          break;
-
-        case ST1VAFE3BX_BW_VAFE_180Hz:
-          ctrl5.bw = 0x03U;
-          break;
-
-        default:
-          /* Value not allowed */
-          ret += 1;
-          break;
-      }
-      break;
+      default:
+        /* Value not allowed */
+        ret += 1;
+        break;
+    }
+  }
+  else
+  {
+    switch (val->odr)
+    {
+      /* No anti-aliasing filter present */
+      default:
+      case ST1VAFE3BX_OFF:
+      case ST1VAFE3BX_1Hz6_ULP:
+      case ST1VAFE3BX_3Hz_ULP:
+      case ST1VAFE3BX_25Hz_ULP:
+      case ST1VAFE3BX_TRIG_PIN:
+      case ST1VAFE3BX_TRIG_SW:
+        ctrl5.bw = 0x00U;
+        break;
+  
+      /* The low-power mode with ODR < 50 Hz */
+      case ST1VAFE3BX_6Hz_LP:
+        switch (val->bw)
+        {
+          case ST1VAFE3BX_BW_LP_3Hz:
+            ctrl5.bw = 0x03U;
+            break;
+  
+          default:
+            /* Value not allowed */
+            ret += 1;
+            break;
+        }
+        break;
+  
+      case ST1VAFE3BX_12Hz5_LP:
+        switch (val->bw)
+        {
+          case ST1VAFE3BX_BW_LP_6Hz:
+            ctrl5.bw = 0x02U;
+            break;
+  
+          case ST1VAFE3BX_BW_LP_3Hz:
+            ctrl5.bw = 0x03U;
+            break;
+  
+          default:
+            /* Value not allowed */
+            ret += 1;
+            break;
+        }
+        break;
+  
+      case ST1VAFE3BX_25Hz_LP:
+        switch (val->bw)
+        {
+          case ST1VAFE3BX_BW_LP_12Hz5:
+            ctrl5.bw = 0x01U;
+            break;
+  
+          case ST1VAFE3BX_BW_LP_6Hz:
+            ctrl5.bw = 0x02U;
+            break;
+  
+          case ST1VAFE3BX_BW_LP_3Hz:
+            ctrl5.bw = 0x03U;
+            break;
+  
+          default:
+            /* Value not allowed */
+            ret += 1;
+            break;
+        }
+        break;
+  
+      /* The low-power mode with ODR >= 50 Hz, High Performance cases */
+      case ST1VAFE3BX_50Hz_LP:
+      case ST1VAFE3BX_100Hz_LP:
+      case ST1VAFE3BX_200Hz_LP:
+      case ST1VAFE3BX_400Hz_LP:
+      case ST1VAFE3BX_800Hz_LP:
+      case ST1VAFE3BX_6Hz_HP:
+      case ST1VAFE3BX_12Hz5_HP:
+      case ST1VAFE3BX_25Hz_HP:
+      case ST1VAFE3BX_50Hz_HP:
+      case ST1VAFE3BX_100Hz_HP:
+      case ST1VAFE3BX_200Hz_HP:
+      case ST1VAFE3BX_400Hz_HP:
+      case ST1VAFE3BX_800Hz_HP:
+        switch (val->bw)
+        {
+          case ST1VAFE3BX_BW_ODR_div_2:
+            ctrl5.bw = 0x00U;
+            break;
+  
+          case ST1VAFE3BX_BW_ODR_div_4:
+            ctrl5.bw = 0x01U;
+            break;
+  
+          case ST1VAFE3BX_BW_ODR_div_8:
+            ctrl5.bw = 0x02U;
+            break;
+  
+          case ST1VAFE3BX_BW_ODR_div_16:
+            ctrl5.bw = 0x03U;
+            break;
+  
+          default:
+            /* Value not allowed */
+            ret += 1;
+            break;
+        }
+        break;
+    }
   }
 
   if (ret == 0)
